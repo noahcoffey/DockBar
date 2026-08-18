@@ -20,7 +20,8 @@ A macOS menubar app that shows live deploy status for your self-hosted
   deployment title.
 
 Works with both **applications** and **Docker Compose** services, on any Dokploy instance
-you have API access to.
+you have API access to. Built against the current Dokploy API (projects → environments →
+services); very old Dokploy versions without environments aren't supported.
 
 ## Install
 
