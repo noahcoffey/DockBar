@@ -27,14 +27,14 @@ final class Poller: Sendable {
                                 kind: .application, id: a.applicationId, name: a.name,
                                 status: a.applicationStatus, org: org.name, apiKey: org.apiKey,
                                 projectId: p.projectId, projectName: p.name,
-                                environmentId: e.environmentId))
+                                environmentId: e.environmentId, environmentName: e.name))
                         }
                         for c in e.compose ?? [] {
                             services.append(Service(
                                 kind: .compose, id: c.composeId, name: c.name,
                                 status: c.composeStatus, org: org.name, apiKey: org.apiKey,
                                 projectId: p.projectId, projectName: p.name,
-                                environmentId: e.environmentId))
+                                environmentId: e.environmentId, environmentName: e.name))
                         }
                     }
                 }

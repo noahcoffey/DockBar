@@ -52,6 +52,7 @@ struct Service: Sendable {
     let projectId: String
     let projectName: String
     let environmentId: String
+    let environmentName: String
 
     var isDeploying: Bool { status == "running" }
 

@@ -173,6 +173,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         menu.addItem(.separator())
+        addBrowseSection(to: menu, services: snap.services)
+
+        menu.addItem(.separator())
         menu.addItem(disabled("Recent deployments"))
 
         if snap.recent.isEmpty {
@@ -205,6 +208,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(disabled("Updated \(DateFormatter.localizedString(from: snap.fetchedAt, dateStyle: .none, timeStyle: .medium))"))
         addFooter(to: menu)
         return menu
+    }
+
+    /// Adds an "Apps" browse tree: Org > Project > Service (leaves open the dashboard).
+    /// With a single org the org level is skipped.
+    private func addBrowseSection(to menu: NSMenu, services: [Service]) {
+        menu.addItem(disabled("Apps"))
+        guard !services.isEmpty else {
+            menu.addItem(disabled("None found"))
+            return
+        }
+
+        let byOrg = Dictionary(grouping: services, by: \.org)
+        let orgNames = (config?.orgs.map(\.name) ?? []).filter { byOrg[$0] != nil }
+
+        if orgNames.count == 1, let only = byOrg[orgNames[0]] {
+            addProjectItems(to: menu, services: only)
+        } else {
+            for org in orgNames {
+                let item = NSMenuItem(title: org, action: nil, keyEquivalent: "")
+                let submenu = NSMenu()
+                addProjectItems(to: submenu, services: byOrg[org] ?? [])
+                item.submenu = submenu
+                menu.addItem(item)
+            }
+        }
+    }
+
+    private func addProjectItems(to menu: NSMenu, services: [Service]) {
+        let byProject = Dictionary(grouping: services, by: \.projectId)
+        let sorted = byProject.values.sorted {
+            ($0[0].projectName).localizedCaseInsensitiveCompare($1[0].projectName) == .orderedAscending
+        }
+        for projectServices in sorted {
+            let item = NSMenuItem(title: projectServices[0].projectName, action: nil, keyEquivalent: "")
+            let submenu = NSMenu()
+            let multiEnv = Set(projectServices.map(\.environmentId)).count > 1
+            let ordered = projectServices.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+            for s in ordered {
+                let glyph: String
+                switch s.status {
+                case "done": glyph = "✅"
+                case "error": glyph = "❌"
+                case "running": glyph = "🔄"
+                default: glyph = "⏺"
+                }
+                var title = "\(glyph) \(truncate(s.name, 28))"
+                if multiEnv { title += " (\(s.environmentName))" }
+                let serviceItem = NSMenuItem(title: title, action: #selector(openService(_:)), keyEquivalent: "")
+                serviceItem.target = self
+                serviceItem.representedObject = s.dashboardURL(serverUrl: config?.serverUrl ?? "")
+                submenu.addItem(serviceItem)
+            }
+            item.submenu = submenu
+            menu.addItem(item)
+        }
     }
 
     private func addFooter(to menu: NSMenu) {
